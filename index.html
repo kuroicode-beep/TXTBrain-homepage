@@ -207,6 +207,10 @@
       padding: 0 40px;
       max-width: calc(var(--cw) + 80px);
       margin: 0 auto;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .hero-eyebrow {
       font-family: var(--mono);
@@ -238,11 +242,13 @@
       font-weight: 300;
       opacity: 0;
       animation: fade-up 1s ease 0.7s forwards;
+      text-align: center;
     }
     .hero-actions {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+      justify-content: center;
       opacity: 0;
       animation: fade-up 1s ease 0.9s forwards;
     }
@@ -713,7 +719,7 @@
       .flow-grid { grid-template-columns: 1fr; }
       .flow-step { border-right: none; border-bottom: 1px solid var(--border); }
       .flow-step:last-child { border-bottom: none; }
-      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .hero-actions { flex-direction: column; align-items: center; }
       footer { flex-direction: column; gap: 16px; text-align: center; }
       .footer-links { justify-content: center; }
     }
