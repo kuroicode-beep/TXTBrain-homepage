@@ -21,7 +21,7 @@
       --border:       #1e1e1e;
       --border-2:     #2a2a2a;
       --text:         #d8d8d8;
-      --text-dim:     #666666;
+      --text-dim:     #b0b0b0;
       --text-dimmer:  #3a3a3a;
       --accent:       #f0c040;
       --accent-dim:   rgba(240, 192, 64, 0.1);
@@ -137,12 +137,20 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       z-index: 200;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
+      border-bottom: 1px solid transparent;
+    }
+    .nav-inner {
+      width: 100%;
+      max-width: var(--cw);
       padding: 18px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
-      border-bottom: 1px solid transparent;
     }
     nav.scrolled {
       background: rgba(10,10,10,0.88);
@@ -672,14 +680,89 @@
     .dl-actions { display: flex; justify-content: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
     .dl-info { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dimmer); letter-spacing: 0.06em; }
 
+    /* ─── TXTDrop ────────────────────────────────────────────────────────────── */
+    #txtdrop {
+      border-top: 1px solid var(--border);
+    }
+    .txtdrop-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: start;
+    }
+    .txtdrop-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid rgba(240,192,64,0.35);
+      border-radius: 2px;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    .txtdrop-body p {
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      line-height: 1.9;
+      margin-bottom: 14px;
+    }
+    .txtdrop-body p strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+    .txtdrop-actions { margin-top: 36px; }
+    .txtdrop-feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .txtdrop-feature-item {
+      background: var(--bg);
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: background 0.2s;
+    }
+    .txtdrop-feature-item:hover { background: var(--bg-card); }
+    .txtdrop-feature-key {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid rgba(240,192,64,0.2);
+      border-radius: 2px;
+      padding: 3px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .txtdrop-feature-text {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    @media (max-width: 960px) {
+      .txtdrop-grid { grid-template-columns: 1fr; gap: 48px; }
+    }
+
     /* ─── Footer ──────────────────────────────────────────────────────────────── */
     footer {
-      padding: 28px 40px;
+      padding: 0 0;
       border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
+    .footer-inner {
+      width: 100%;
+      max-width: var(--cw);
+      padding: 28px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      position: relative;
     }
     .footer-logo { display: flex; align-items: center; }
     .footer-logo img { height: 22px; width: auto; opacity: 0.5; }
@@ -712,7 +795,8 @@
     @media (max-width: 600px) {
       :root { --sp: 60px; }
       .container { padding: 0 20px; }
-      nav { padding: 14px 20px; }
+      nav { padding: 0; }
+      .nav-inner { padding: 14px 20px; }
       .nav-links { display: none; }
       .hero-content { padding: 0 20px; }
       .feature-grid { grid-template-columns: 1fr; }
@@ -720,7 +804,8 @@
       .flow-step { border-right: none; border-bottom: 1px solid var(--border); }
       .flow-step:last-child { border-bottom: none; }
       .hero-actions { flex-direction: column; align-items: center; }
-      footer { flex-direction: column; gap: 16px; text-align: center; }
+      footer { flex-direction: column; gap: 0; text-align: center; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; padding: 20px; }
       .footer-links { justify-content: center; }
     }
   </style>
@@ -729,6 +814,7 @@
 
 <!-- ── Navigation ─────────────────────────────────────────────────────────── -->
 <nav id="nav">
+  <div class="nav-inner">
   <a href="#" class="nav-logo">
     <img src="assets/logo-horizontal.svg" alt="TXTBrain" height="30">
   </a>
@@ -739,6 +825,7 @@
     <li><a href="#svil">SVIL</a></li>
     <li><a href="#download" class="nav-dl">Download</a></li>
   </ul>
+  </div>
 </nav>
 
 <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
@@ -1051,8 +1138,60 @@
   </div>
 </div>
 
+<!-- ── TXTDrop ────────────────────────────────────────────────────────────── -->
+<section id="txtdrop">
+  <div class="container">
+    <div class="txtdrop-grid">
+
+      <div class="txtdrop-body reveal">
+        <div class="txtdrop-badge">SVIL Utility · TXTBrain 생태계</div>
+        <h2>TXTDrop</h2>
+        <br>
+        <p>TXTDrop은 클립보드 내용을 한 번의 단축키로 저장하는 작은 유틸리티입니다.</p>
+        <p><strong>Ctrl + Shift + Z</strong> 를 누르면 클립보드의 텍스트는 TXT로, 이미지는 PNG로 자동 저장됩니다.</p>
+        <p>TXTBrain용 자료 수집 도구입니다.</p>
+        <div class="txtdrop-actions">
+          <a href="/TXTDrop/TXTDropSetup.exe" class="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M6.5 1v7.5M3.5 6l3 3 3-3M1.5 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download TXTDrop
+          </a>
+        </div>
+      </div>
+
+      <div class="reveal d2">
+        <div class="txtdrop-feature-list">
+          <div class="txtdrop-feature-item">
+            <span class="txtdrop-feature-key">Ctrl+Shift+Z</span>
+            <span class="txtdrop-feature-text">단축키 한 번으로 즉시 저장</span>
+          </div>
+          <div class="txtdrop-feature-item">
+            <span class="txtdrop-feature-key">TXT</span>
+            <span class="txtdrop-feature-text">클립보드 텍스트 자동 저장</span>
+          </div>
+          <div class="txtdrop-feature-item">
+            <span class="txtdrop-feature-key">PNG</span>
+            <span class="txtdrop-feature-text">클립보드 이미지 자동 저장</span>
+          </div>
+          <div class="txtdrop-feature-item">
+            <span class="txtdrop-feature-key">Tray</span>
+            <span class="txtdrop-feature-text">백그라운드 트레이 실행</span>
+          </div>
+          <div class="txtdrop-feature-item">
+            <span class="txtdrop-feature-key">No UI</span>
+            <span class="txtdrop-feature-text">UI 없음 — 방해 없이 작동</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
 <footer>
+  <div class="footer-inner">
   <a href="#" class="footer-logo">
     <img src="assets/logo-horizontal.svg" alt="TXTBrain" height="22">
   </a>
@@ -1062,6 +1201,7 @@
     <a href="#">GitHub</a>
     <a href="#">SVIL</a>
   </nav>
+  </div>
 </footer>
 
 
@@ -1237,7 +1377,7 @@
     }
 
     /* Edge vignette to focus on center content */
-    const vig = ctx.createRadialGradient(W * 0.4, H / 2, 0, W * 0.4, H / 2, Math.max(W, H) * 0.72);
+    const vig = ctx.createRadialGradient(W * 0.5, H / 2, 0, W * 0.5, H / 2, Math.max(W, H) * 0.72);
     vig.addColorStop(0, 'rgba(10,10,10,0)');
     vig.addColorStop(1, 'rgba(10,10,10,0.75)');
     ctx.fillStyle = vig;
