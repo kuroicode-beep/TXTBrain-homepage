@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TXTBrain — 다운로드 폴더의 혼란을 흡수해 정리하는 로컬 AI 뉴럴 아카이브. SVIL Project.">
+  <title>TXTBrain — 로컬 AI 뉴럴 아카이브</title>
+  <link rel="icon" href="assets/logo-icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── Reset & Custom Properties ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0a0a0a;
+      --bg-2:         #0e0e0e;
+      --bg-card:      #111111;
+      --border:       #1e1e1e;
+      --border-2:     #2a2a2a;
+      --text:         #d8d8d8;
+      --text-dim:     #666666;
+      --text-dimmer:  #3a3a3a;
+      --accent:       #f0c040;
+      --accent-dim:   rgba(240, 192, 64, 0.1);
+      --accent-glow:  rgba(240, 192, 64, 0.3);
+      --white:        #f0f0f0;
+      --font:         'Inter', 'Noto Sans KR', system-ui, sans-serif;
+      --mono:         'Fira Code', 'Consolas', 'Monaco', monospace;
+      --sp:           120px;    /* section padding */
+      --cw:           1100px;   /* container width */
+      --r:            3px;      /* border-radius */
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* subtle grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Layout ──────────────────────────────────────────────────────────────── */
+    .container {
+      max-width: var(--cw);
+      margin: 0 auto;
+      padding: 0 40px;
+      position: relative;
+    }
+    section { padding: var(--sp) 0; position: relative; }
+
+    /* ─── Typography ──────────────────────────────────────────────────────────── */
+    .label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    h2 {
+      font-size: clamp(1.9rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--white);
+    }
+    h3 { font-size: 1rem; font-weight: 600; color: var(--white); }
+
+    /* ─── Reveal ──────────────────────────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: 0.08s; }
+    .d2 { transition-delay: 0.18s; }
+    .d3 { transition-delay: 0.28s; }
+    .d4 { transition-delay: 0.38s; }
+    .d5 { transition-delay: 0.48s; }
+
+    /* ─── Buttons ─────────────────────────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      background: var(--accent);
+      color: #0a0a0a;
+      font-weight: 700;
+      font-size: 0.875rem;
+      text-decoration: none;
+      border-radius: var(--r);
+      letter-spacing: 0.01em;
+      transition: background 0.2s, box-shadow 0.25s, transform 0.2s;
+    }
+    .btn-primary:hover {
+      background: #f8d860;
+      box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(0,0,0,0.4);
+      transform: translateY(-2px);
+    }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 13px 26px;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+      text-decoration: none;
+      border: 1px solid var(--border-2);
+      border-radius: var(--r);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Navigation ──────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
+      border-bottom: 1px solid transparent;
+    }
+    nav.scrolled {
+      background: rgba(10,10,10,0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom-color: var(--border);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+    .nav-logo img { height: 30px; width: auto; display: block; }
+    .nav-links { display: flex; gap: 28px; list-style: none; align-items: center; }
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-dl {
+      font-family: var(--mono) !important;
+      font-size: 0.7rem !important;
+      color: var(--accent) !important;
+      border: 1px solid rgba(240,192,64,0.4);
+      padding: 6px 14px;
+      border-radius: var(--r);
+    }
+    .nav-dl:hover { background: var(--accent-dim); color: var(--accent) !important; }
+
+    /* ─── Hero ────────────────────────────────────────────────────────────────── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      min-height: 640px;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      overflow: hidden;
+    }
+    #neural-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* bottom fade into next section */
+    #hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 220px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+      pointer-events: none;
+      z-index: 1;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 0 40px;
+      max-width: calc(var(--cw) + 80px);
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 22px;
+      opacity: 0;
+      animation: fade-up 1s ease 0.3s forwards;
+    }
+    .hero-title {
+      font-size: clamp(3.8rem, 10vw, 7.5rem);
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 0.92;
+      color: var(--white);
+      margin-bottom: 28px;
+      text-shadow: 0 0 80px rgba(240,192,64,0.08);
+      opacity: 0;
+      animation: fade-up 1s ease 0.5s forwards;
+    }
+    .hero-tagline {
+      font-size: clamp(0.95rem, 2vw, 1.15rem);
+      color: var(--text-dim);
+      line-height: 1.85;
+      max-width: 420px;
+      margin-bottom: 44px;
+      font-weight: 300;
+      opacity: 0;
+      animation: fade-up 1s ease 0.7s forwards;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fade-up 1s ease 0.9s forwards;
+    }
+    .hero-scroll {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+      opacity: 0;
+      animation: fade-in 1s ease 1.4s forwards;
+    }
+    .hero-scroll span {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+    }
+    .hero-scroll-line {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, var(--text-dimmer), transparent);
+      animation: scroll-pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes scroll-pulse {
+      0%, 100% { transform: scaleY(1) translateY(0); opacity: 0.4; }
+      50%       { transform: scaleY(0.6) translateY(8px); opacity: 0.2; }
+    }
+
+    /* ─── Problem ─────────────────────────────────────────────────────────────── */
+    #problem { border-top: 1px solid var(--border); }
+
+    .problem-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: end;
+      margin-bottom: 72px;
+    }
+    .problem-desc {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.9;
+    }
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .pain-item {
+      background: var(--bg);
+      padding: 40px 32px;
+      transition: background 0.25s;
+    }
+    .pain-item:hover { background: var(--bg-card); }
+    .pain-num {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      color: var(--text-dimmer);
+      margin-bottom: 24px;
+    }
+    .pain-title { font-size: 1rem; font-weight: 600; color: var(--white); margin-bottom: 10px; }
+    .pain-desc { font-size: 0.875rem; color: var(--text-dim); line-height: 1.75; }
+
+    /* ─── How it works ────────────────────────────────────────────────────────── */
+    #how-it-works {
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .section-head { margin-bottom: 64px; }
+    .section-head .label { display: block; margin-bottom: 14px; }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .flow-step {
+      padding: 40px 32px 40px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .flow-step:last-child { border-right: none; }
+    .flow-step-num {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--text-dimmer);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .flow-step-num::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .flow-step:last-child .flow-step-num::after { display: none; }
+
+    .flow-icon {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border-2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0;
+    }
+    .flow-step.is-active .flow-icon {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .flow-step-title { font-size: 0.95rem; font-weight: 600; color: var(--white); margin-bottom: 8px; }
+    .flow-step-desc { font-size: 0.83rem; color: var(--text-dim); line-height: 1.75; }
+
+    /* ─── Features ────────────────────────────────────────────────────────────── */
+    #features { border-top: 1px solid var(--border); }
+    .features-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 56px;
+    }
+    .feature-count {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dimmer);
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .feature-card {
+      background: var(--bg);
+      padding: 38px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid transparent;
+      transition: border-color 0.3s;
+      pointer-events: none;
+    }
+    .feature-card:hover { background: var(--bg-card); }
+    .feature-card:hover::before { border-color: var(--accent); }
+    .feature-tag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+      margin-bottom: 18px;
+    }
+    .feature-title { font-size: 0.95rem; font-weight: 600; color: var(--white); margin-bottom: 10px; }
+    .feature-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.75; }
+    .feature-hint {
+      position: absolute;
+      bottom: 18px; right: 22px;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.3s;
+      letter-spacing: 0.06em;
+    }
+    .feature-card:hover .feature-hint { opacity: 1; }
+
+    /* ─── Interface Preview ───────────────────────────────────────────────────── */
+    #interface {
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .interface-head { text-align: center; margin-bottom: 64px; }
+    .interface-head .label { display: block; margin-bottom: 14px; }
+
+    .app-frame {
+      max-width: 880px;
+      margin: 0 auto;
+      border: 1px solid var(--border-2);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.7),
+        0 0 0 1px var(--border),
+        0 0 40px rgba(240,192,64,0.04);
+      transform: perspective(1200px) rotateX(3deg);
+      transition: transform 0.6s ease;
+    }
+    .app-frame:hover { transform: perspective(1200px) rotateX(0deg); }
+
+    .app-titlebar {
+      background: #161616;
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-2); }
+    .tb-title {
+      margin-left: 10px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dimmer);
+    }
+    .tb-version {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dimmer);
+    }
+
+    .app-body {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      min-height: 380px;
+    }
+    .app-sidebar {
+      background: #0f0f0f;
+      border-right: 1px solid var(--border);
+      padding: 18px 14px;
+    }
+    .sb-group { margin-bottom: 22px; }
+    .sb-label {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+    .sb-item {
+      padding: 7px 10px;
+      border-radius: 2px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 1px;
+      cursor: default;
+    }
+    .sb-item.active { background: var(--accent-dim); color: var(--accent); }
+    .sb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dimmer); flex-shrink: 0; }
+    .sb-item.active .sb-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+
+    .app-main { padding: 18px 22px; }
+    .app-search {
+      background: #161616;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 9px 13px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .app-search-icon { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dimmer); }
+    .app-search-text { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); }
+    .app-cursor {
+      width: 1px; height: 13px;
+      background: var(--accent);
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .doc-list { display: flex; flex-direction: column; gap: 1px; }
+    .doc-item {
+      padding: 9px 11px;
+      border-radius: 2px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1px solid transparent;
+      cursor: default;
+      transition: background 0.15s;
+    }
+    .doc-item:hover { background: var(--bg-card); }
+    .doc-item.sel { background: var(--accent-dim); border-color: rgba(240,192,64,0.15); }
+    .doc-ext {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      padding: 2px 5px;
+      border-radius: 2px;
+      background: var(--border);
+      color: var(--text-dimmer);
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .doc-item.sel .doc-ext { background: rgba(240,192,64,0.18); color: var(--accent); }
+    .doc-name { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-meta { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dimmer); margin-top: 2px; }
+    .app-status {
+      background: #0c0c0c;
+      border-top: 1px solid var(--border);
+      padding: 5px 14px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .status-item {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dimmer);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dimmer); }
+    .status-dot.online { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: status-pulse 2.5s ease-in-out infinite; }
+    @keyframes status-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ─── SVIL ────────────────────────────────────────────────────────────────── */
+    #svil { border-top: 1px solid var(--border); }
+    .svil-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: center;
+    }
+    .svil-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid var(--border-2);
+      border-radius: 2px;
+      color: var(--text-dimmer);
+      margin-bottom: 24px;
+    }
+    .svil-body p {
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      line-height: 1.9;
+      margin-bottom: 14px;
+    }
+    .svil-actions { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+    .eco-list { display: flex; flex-direction: column; gap: 10px; }
+    .eco-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: default;
+    }
+    .eco-item:hover { border-color: var(--border-2); background: var(--bg-card); }
+    .eco-item.current { border-color: var(--accent); background: var(--accent-dim); }
+    .eco-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-2); flex-shrink: 0; }
+    .eco-item.current .eco-dot { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+    .eco-name { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+    .eco-item.current .eco-name { color: var(--accent); }
+    .eco-sub { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dimmer); margin-top: 2px; }
+    .eco-status {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dimmer);
+    }
+    .eco-item.current .eco-status { color: var(--accent); }
+
+    /* ─── Download CTA ────────────────────────────────────────────────────────── */
+    #download {
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      padding: var(--sp) 0;
+      text-align: center;
+      position: relative;
+    }
+    .dl-label { display: block; margin-bottom: 18px; }
+    .dl-title {
+      font-size: clamp(2.2rem, 5.5vw, 4rem);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.035em;
+      margin-bottom: 14px;
+    }
+    .dl-sub { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 44px; }
+    .dl-actions { display: flex; justify-content: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+    .dl-info { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dimmer); letter-spacing: 0.06em; }
+
+    /* ─── Footer ──────────────────────────────────────────────────────────────── */
+    footer {
+      padding: 28px 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    .footer-logo { display: flex; align-items: center; }
+    .footer-logo img { height: 22px; width: auto; opacity: 0.5; }
+    .footer-logo:hover img { opacity: 0.8; }
+    .footer-copy { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dimmer); letter-spacing: 0.06em; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dimmer);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ─── Responsive ──────────────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      :root { --sp: 80px; }
+      .container { padding: 0 28px; }
+      .problem-header { grid-template-columns: 1fr; gap: 28px; }
+      .pain-grid { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: 1fr 1fr; }
+      .flow-step:nth-child(2) { border-right: none; }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .svil-grid { grid-template-columns: 1fr; gap: 56px; }
+      .app-sidebar { display: none; }
+      .app-body { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      :root { --sp: 60px; }
+      .container { padding: 0 20px; }
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .hero-content { padding: 0 20px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: 1fr; }
+      .flow-step { border-right: none; border-bottom: 1px solid var(--border); }
+      .flow-step:last-child { border-bottom: none; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────────── -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <img src="assets/logo-horizontal.svg" alt="TXTBrain" height="30">
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">작동 방식</a></li>
+    <li><a href="#features">기능</a></li>
+    <li><a href="#interface">인터페이스</a></li>
+    <li><a href="#svil">SVIL</a></li>
+    <li><a href="#download" class="nav-dl">Download</a></li>
+  </ul>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+<section id="hero">
+  <canvas id="neural-canvas"></canvas>
+
+  <div class="hero-content">
+    <div style="margin-bottom:20px; opacity:0; animation: fade-up 1s ease 0.2s forwards;">
+      <img src="assets/logo-icon.svg" alt="" width="52" height="52" aria-hidden="true">
+    </div>
+    <div class="hero-eyebrow">SVIL Project · Local AI Archive</div>
+    <h1 class="hero-title">TXTBrain</h1>
+    <p class="hero-tagline">
+      다운로드 폴더의 혼란을 흡수해<br>
+      정리하는 로컬 AI 뉴럴 아카이브
+    </p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+          <path d="M6.5 1v7.5M3.5 6l3 3 3-3M1.5 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        다운로드
+      </a>
+      <a href="#how-it-works" class="btn-ghost">어떻게 작동하나요 →</a>
+    </div>
+  </div>
+
+  <div class="hero-scroll" aria-hidden="true">
+    <span>scroll</span>
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
+
+<!-- ── Problem ────────────────────────────────────────────────────────────── -->
+<section id="problem">
+  <div class="container">
+    <div class="problem-header reveal">
+      <div>
+        <span class="label" style="display:block; margin-bottom:14px">The Problem</span>
+        <h2>흩어진 파일,<br>사라지는 맥락</h2>
+      </div>
+      <p class="problem-desc">
+        문서가 쌓일수록 찾기는 어려워집니다.<br>
+        TXTBrain은 흩어진 파일을 조용히 흡수하고,<br>
+        검색 가능한 구조로 재편합니다.
+      </p>
+    </div>
+
+    <div class="pain-grid">
+      <div class="pain-item reveal d1">
+        <div class="pain-num">01 ─────</div>
+        <div class="pain-title">흩어진 파일들</div>
+        <p class="pain-desc">다운로드, 바탕화면, 임시 폴더에 쌓이는 TXT·DOCX·PDF. 필요한 순간 어디 있는지 알 수 없습니다.</p>
+      </div>
+      <div class="pain-item reveal d2">
+        <div class="pain-num">02 ─────</div>
+        <div class="pain-title">사라지는 맥락</div>
+        <p class="pain-desc">파일 이름만으로는 내용을 알 수 없습니다. 열어보기 전까지 무엇인지 모릅니다.</p>
+      </div>
+      <div class="pain-item reveal d3">
+        <div class="pain-num">03 ─────</div>
+        <div class="pain-title">클라우드 의존</div>
+        <p class="pain-desc">민감한 문서를 외부로 보내기 불편합니다. 인터넷 없이 완전히 작동하는 로컬 솔루션이 필요합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ───────────────────────────────────────────────────────── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="label">How it works</span>
+      <h2 style="margin-top:14px">문서가 신경망으로<br>흡수됩니다</h2>
+    </div>
+
+    <div class="flow-grid">
+      <div class="flow-step reveal d1">
+        <div class="flow-step-num">01</div>
+        <div class="flow-icon">TXT</div>
+        <div class="flow-step-title">파일 추가</div>
+        <p class="flow-step-desc">TXT, DOCX, PDF 파일을 드래그하거나 폴더를 지정합니다.</p>
+      </div>
+      <div class="flow-step is-active reveal d2">
+        <div class="flow-step-num">02</div>
+        <div class="flow-icon">AI</div>
+        <div class="flow-step-title">AI 분석</div>
+        <p class="flow-step-desc">로컬 Ollama 엔진이 문서 내용을 파악하고 구조화합니다.</p>
+      </div>
+      <div class="flow-step reveal d3">
+        <div class="flow-step-num">03</div>
+        <div class="flow-icon">DB</div>
+        <div class="flow-step-title">DB 저장</div>
+        <p class="flow-step-desc">로컬 SQLite DB에 안전하게 저장됩니다. 인터넷 연결 불필요.</p>
+      </div>
+      <div class="flow-step reveal d4">
+        <div class="flow-step-num">04</div>
+        <div class="flow-icon">⌕</div>
+        <div class="flow-step-title">즉시 검색</div>
+        <p class="flow-step-desc">자연어로 질문하면 관련 문서를 즉각적으로 찾아냅니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <div class="features-head reveal">
+      <div>
+        <span class="label" style="display:block; margin-bottom:14px">Features</span>
+        <h2>주요 기능</h2>
+      </div>
+      <span class="feature-count">06 FEATURES</span>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card reveal d1">
+        <div class="feature-tag">AI · LOCAL</div>
+        <div class="feature-title">로컬 AI 검색</div>
+        <p class="feature-desc">Ollama 기반 로컬 LLM이 문서 내용을 이해하고 자연어 질문에 답합니다. 데이터가 외부로 나가지 않습니다.</p>
+        <span class="feature-hint">→ Ollama</span>
+      </div>
+      <div class="feature-card reveal d2">
+        <div class="feature-tag">IMPORT</div>
+        <div class="feature-title">다중 포맷 지원</div>
+        <p class="feature-desc">TXT, DOCX, PDF 파일을 단일 인터페이스에서 관리합니다. 드래그 앤 드롭으로 즉시 추가.</p>
+        <span class="feature-hint">→ TXT / DOCX / PDF</span>
+      </div>
+      <div class="feature-card reveal d3">
+        <div class="feature-tag">STORAGE</div>
+        <div class="feature-title">로컬 데이터베이스</div>
+        <p class="feature-desc">모든 데이터는 로컬 SQLite DB에 저장됩니다. 클라우드 없이 완전히 오프라인으로 작동합니다.</p>
+        <span class="feature-hint">→ SQLite</span>
+      </div>
+      <div class="feature-card reveal d1">
+        <div class="feature-tag">SEARCH</div>
+        <div class="feature-title">전문 검색</div>
+        <p class="feature-desc">제목, 내용, 날짜 기반 필터로 정밀하게 검색합니다. 수백 개의 파일에서도 즉각적인 결과.</p>
+        <span class="feature-hint">→ Full-text</span>
+      </div>
+      <div class="feature-card reveal d2">
+        <div class="feature-tag">EXPORT</div>
+        <div class="feature-title">데이터 내보내기</div>
+        <p class="feature-desc">정리된 문서를 다양한 형식으로 내보냅니다. 아카이브를 원하는 방식으로 활용하세요.</p>
+        <span class="feature-hint">→ Export</span>
+      </div>
+      <div class="feature-card reveal d3">
+        <div class="feature-tag">I18N</div>
+        <div class="feature-title">한국어 / English</div>
+        <p class="feature-desc">한국어와 영어를 완벽 지원합니다. 설정에서 언제든지 언어를 전환할 수 있습니다.</p>
+        <span class="feature-hint">→ KO / EN</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Interface Preview ──────────────────────────────────────────────────── -->
+<section id="interface">
+  <div class="container">
+    <div class="interface-head reveal">
+      <span class="label">Interface</span>
+      <h2 style="margin-top:14px">조용히 작동하는<br>다크 랩 인터페이스</h2>
+    </div>
+
+    <div class="app-frame reveal" style="transition-delay:0.15s">
+      <!-- Title bar -->
+      <div class="app-titlebar">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <img src="assets/logo-icon.svg" alt="TXTBrain" width="14" height="14" style="margin-left:8px; opacity:0.7;">
+        <span class="tb-title" style="margin-left:6px">TXTBrain</span>
+        <span class="tb-version">v0.1.0 — SVIL</span>
+      </div>
+
+      <!-- App body -->
+      <div class="app-body">
+        <!-- Sidebar -->
+        <div class="app-sidebar">
+          <div class="sb-group">
+            <div class="sb-label">Library</div>
+            <div class="sb-item active"><div class="sb-dot"></div>전체 문서</div>
+            <div class="sb-item"><div class="sb-dot"></div>최근 추가</div>
+            <div class="sb-item"><div class="sb-dot"></div>즐겨찾기</div>
+          </div>
+          <div class="sb-group">
+            <div class="sb-label">Type</div>
+            <div class="sb-item"><div class="sb-dot"></div>TXT (34)</div>
+            <div class="sb-item"><div class="sb-dot"></div>DOCX (12)</div>
+            <div class="sb-item"><div class="sb-dot"></div>PDF (8)</div>
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="app-main">
+          <div class="app-search">
+            <span class="app-search-icon">⌕</span>
+            <span class="app-search-text">2024년 프로젝트 회의록</span>
+            <div class="app-cursor"></div>
+          </div>
+          <div class="doc-list">
+            <div class="doc-item sel">
+              <span class="doc-ext">DOCX</span>
+              <div>
+                <div class="doc-name">2024-Q3 프로젝트 회의록.docx</div>
+                <div class="doc-meta">2024.09.12 · 3.2 KB</div>
+              </div>
+            </div>
+            <div class="doc-item">
+              <span class="doc-ext">TXT</span>
+              <div>
+                <div class="doc-name">meeting-notes-2024-08.txt</div>
+                <div class="doc-meta">2024.08.27 · 1.8 KB</div>
+              </div>
+            </div>
+            <div class="doc-item">
+              <span class="doc-ext">PDF</span>
+              <div>
+                <div class="doc-name">프로젝트 기획서 v2.pdf</div>
+                <div class="doc-meta">2024.07.14 · 215 KB</div>
+              </div>
+            </div>
+            <div class="doc-item">
+              <span class="doc-ext">TXT</span>
+              <div>
+                <div class="doc-name">아이디어 메모_0603.txt</div>
+                <div class="doc-meta">2024.06.03 · 0.9 KB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="app-status">
+        <div class="status-item"><div class="status-dot online"></div>Ollama 연결됨</div>
+        <div class="status-item"><div class="status-dot"></div>문서 54개</div>
+        <div class="status-item"><div class="status-dot"></div>마지막 동기화: 방금</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SVIL ────────────────────────────────────────────────────────────────── -->
+<section id="svil">
+  <div class="container">
+    <div class="svil-grid">
+      <div class="svil-body reveal">
+        <div class="svil-badge">SVIL ECOSYSTEM</div>
+        <h2>SVIL 생태계의<br>첫 번째 도구</h2>
+        <br>
+        <p>TXTBrain은 SVIL이 개발 중인 로컬 AI 작업 환경의 첫 공개 도구입니다.</p>
+        <p>개인의 지식 흐름을 기록하고, 검색하고, 연결하는 더 큰 시스템으로 이어집니다.</p>
+        <div class="svil-actions">
+          <a href="#" class="btn-ghost" style="font-size:0.85rem;">SVIL 더 알아보기 →</a>
+        </div>
+      </div>
+
+      <div class="reveal d2">
+        <div class="eco-list">
+          <div class="eco-item current">
+            <div class="eco-dot"></div>
+            <div>
+              <div class="eco-name">TXTBrain</div>
+              <div class="eco-sub">로컬 AI 문서 아카이브</div>
+            </div>
+            <span class="eco-status">공개</span>
+          </div>
+          <div class="eco-item">
+            <div class="eco-dot"></div>
+            <div>
+              <div class="eco-name">AI Workstation</div>
+              <div class="eco-sub">통합 로컬 AI 작업 환경</div>
+            </div>
+            <span class="eco-status">준비 중</span>
+          </div>
+          <div class="eco-item">
+            <div class="eco-dot"></div>
+            <div>
+              <div class="eco-name">SVIL Platform</div>
+              <div class="eco-sub">개발자 도구 생태계</div>
+            </div>
+            <span class="eco-status">개발 중</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Download CTA ────────────────────────────────────────────────────────── -->
+<div id="download">
+  <div class="container">
+    <span class="label dl-label reveal">Ready to organize</span>
+    <h2 class="dl-title reveal d1">지금 시작하세요</h2>
+    <p class="dl-sub reveal d2">무료. 로컬. 오픈소스.</p>
+    <div class="dl-actions reveal d3">
+      <!-- TODO: Replace # with actual download URL -->
+      <a href="#" class="btn-primary">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+          <path d="M6.5 1v7.5M3.5 6l3 3 3-3M1.5 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Windows 다운로드
+      </a>
+      <!-- TODO: Replace # with actual GitHub URL -->
+      <a href="#" class="btn-ghost">GitHub →</a>
+    </div>
+    <p class="dl-info reveal d4">Windows 10 / 11 &nbsp;·&nbsp; Ollama 필요 &nbsp;·&nbsp; Python 불필요</p>
+  </div>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <a href="#" class="footer-logo">
+    <img src="assets/logo-horizontal.svg" alt="TXTBrain" height="22">
+  </a>
+  <span class="footer-copy">© 2025 SVIL · All rights reserved</span>
+  <nav class="footer-links" aria-label="Footer links">
+    <!-- TODO: Replace # with actual URLs -->
+    <a href="#">GitHub</a>
+    <a href="#">SVIL</a>
+  </nav>
+</footer>
+
+
+<!-- ── Scripts ────────────────────────────────────────────────────────────── -->
+<script>
+'use strict';
+
+/* ── Neural Network Canvas ──────────────────────────────────────────────────── */
+(function () {
+  const canvas = document.getElementById('neural-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  let W, H;
+  let nodes   = [];
+  let signals = [];
+
+  const MAX_DIST    = 155;
+  const ACTIVATION_INTERVAL = 1100; // ms between new signal chains
+  let   lastActivation = 0;
+
+  function dist(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    initNodes();
+  }
+
+  function initNodes() {
+    const baseCount = 75;
+    const count = Math.max(35, Math.min(110, Math.round(baseCount * (W * H) / (1280 * 720))));
+    nodes   = [];
+    signals = [];
+
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        vx:    (Math.random() - 0.5) * 0.14,
+        vy:    (Math.random() - 0.5) * 0.14,
+        r:     Math.random() * 1.1 + 0.45,
+        pulse: 0,  // 0..1, decays over time
+      });
+    }
+  }
+
+  function activateNode(node) {
+    node.pulse = 1.0;
+  }
+
+  function spawnSignal(from, exclude) {
+    const neighbors = nodes.filter(m => m !== from && m !== exclude && dist(from, m) < MAX_DIST);
+    if (!neighbors.length) return;
+    const to = neighbors[Math.floor(Math.random() * neighbors.length)];
+    signals.push({
+      from,
+      to,
+      t:     0,
+      speed: 0.0022 + Math.random() * 0.0028,
+    });
+  }
+
+  function update(ts) {
+    /* Periodic activation */
+    if (ts - lastActivation > ACTIVATION_INTERVAL) {
+      const n = nodes[Math.floor(Math.random() * nodes.length)];
+      activateNode(n);
+      spawnSignal(n, null);
+      lastActivation = ts;
+    }
+
+    /* Move nodes */
+    for (const n of nodes) {
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x < -12) n.x = W + 12;
+      else if (n.x > W + 12) n.x = -12;
+      if (n.y < -12) n.y = H + 12;
+      else if (n.y > H + 12) n.y = -12;
+      if (n.pulse > 0) n.pulse = Math.max(0, n.pulse - 0.007);
+    }
+
+    /* Advance signals, collect new ones */
+    const newSignals = [];
+    signals = signals.filter(s => {
+      s.t += s.speed;
+      if (s.t >= 1) {
+        activateNode(s.to);
+        /* 38% chance to propagate one hop further */
+        if (Math.random() < 0.38 && signals.length + newSignals.length < 18) {
+          const neighbors = nodes.filter(m => m !== s.to && m !== s.from && dist(s.to, m) < MAX_DIST);
+          if (neighbors.length) {
+            const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+            newSignals.push({ from: s.to, to: next, t: 0, speed: 0.002 + Math.random() * 0.003 });
+          }
+        }
+        return false;
+      }
+      return true;
+    });
+    signals.push(...newSignals);
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* Connections */
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const d = dist(a, b);
+        if (d >= MAX_DIST) continue;
+
+        const proximity = 1 - d / MAX_DIST;
+        const sharedPulse = Math.max(a.pulse, b.pulse);
+        const baseAlpha = proximity * 0.1;
+        const alpha = baseAlpha + sharedPulse * 0.22;
+
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = sharedPulse > 0.05
+          ? `rgba(240,192,64,${alpha})`
+          : `rgba(200,200,200,${baseAlpha})`;
+        ctx.stroke();
+      }
+    }
+
+    /* Signals */
+    for (const s of signals) {
+      const x = s.from.x + (s.to.x - s.from.x) * s.t;
+      const y = s.from.y + (s.to.y - s.from.y) * s.t;
+
+      /* Glow halo */
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, 7);
+      grd.addColorStop(0, 'rgba(240,192,64,0.85)');
+      grd.addColorStop(1, 'rgba(240,192,64,0)');
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      /* Core dot */
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    }
+
+    /* Nodes */
+    for (const n of nodes) {
+      if (n.pulse > 0.04) {
+        /* Glow halo for active node */
+        const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 7 * n.pulse + 3);
+        g.addColorStop(0, `rgba(240,192,64,${n.pulse * 0.45})`);
+        g.addColorStop(1, 'rgba(240,192,64,0)');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * 7 * n.pulse + 3, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = n.pulse > 0.04
+        ? `rgba(240,192,64,${0.65 + n.pulse * 0.35})`
+        : 'rgba(255,255,255,0.3)';
+      ctx.fill();
+    }
+
+    /* Edge vignette to focus on center content */
+    const vig = ctx.createRadialGradient(W * 0.4, H / 2, 0, W * 0.4, H / 2, Math.max(W, H) * 0.72);
+    vig.addColorStop(0, 'rgba(10,10,10,0)');
+    vig.addColorStop(1, 'rgba(10,10,10,0.75)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  let heroVisible = true;
+  const heroEl = document.getElementById('hero');
+  const heroObs = new IntersectionObserver(e => { heroVisible = e[0].isIntersecting; });
+  heroObs.observe(heroEl);
+
+  function loop(ts) {
+    if (heroVisible) {
+      update(ts);
+      render();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(loop);
+})();
+
+
+/* ── Nav scroll state ────────────────────────────────────────────────────────── */
+(function () {
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 60);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+
+/* ── Scroll reveal ───────────────────────────────────────────────────────────── */
+(function () {
+  const els = document.querySelectorAll('.reveal');
+  const io  = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
+  els.forEach(el => io.observe(el));
+})();
+</script>
+
+</body>
+</html>

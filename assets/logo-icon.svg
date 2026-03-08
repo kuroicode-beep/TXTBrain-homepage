@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Brain outline — bubbly lobe shape -->
+  <path d="
+    M 50 10
+    C 55 7, 64 8, 68 14
+    C 73 9, 82 12, 84 22
+    C 91 22, 95 32, 91 40
+    C 96 45, 96 57, 90 62
+    C 93 70, 88 80, 78 80
+    C 76 87, 66 92, 56 87
+    C 54 92, 50 94, 50 94
+    C 50 94, 46 92, 44 87
+    C 34 92, 24 87, 22 80
+    C 12 80, 7 70, 10 62
+    C 4 57, 4 45, 9 40
+    C 5 32, 9 22, 16 22
+    C 18 12, 27 9, 32 14
+    C 36 8, 45 7, 50 10
+    Z
+  " stroke="#f0c040" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Document body -->
+  <path d="M 34 28 L 54 28 L 63 37 L 63 72 L 34 72 Z" fill="#f0c040"/>
+  <!-- Folded corner (darker shade) -->
+  <path d="M 54 28 L 54 37 L 63 37 Z" fill="#b89020"/>
+  <!-- Text lines on document -->
+  <rect x="40" y="44" width="16" height="2.8" rx="1.4" fill="#111111"/>
+  <rect x="40" y="51" width="16" height="2.8" rx="1.4" fill="#111111"/>
+  <rect x="40" y="58" width="11" height="2.8" rx="1.4" fill="#111111"/>
+</svg>
